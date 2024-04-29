@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <memory>
 #include <sstream>
@@ -539,8 +540,17 @@ void cmComputeTargetDepends::DisplayGraph(Graph const& graph,
     for (cmGraphEdge const& ni : nl) {
       size_t dependee_index = ni;
       cmGeneratorTarget const* dependee = this->Targets[dependee_index];
-      fprintf(stderr, "  depends on target %zu [%s] (%s)\n", dependee_index,
-              dependee->GetName().c_str(), ni.IsStrong() ? "strong" : "weak");
+      cmListFileBacktrace backtrace = ni.GetBacktrace();
+      std::stringstream path;
+      int64_t padding = 0;
+      while (!backtrace.Empty()){
+        padding += 2;
+        auto item = backtrace.Top();
+        path << std::string(padding, ' ') << "|- " << item.Name << "(" << item.FilePath << ":" << item.Line << ")\n";
+        backtrace = backtrace.Pop();
+      }
+      fprintf(stderr, "  depends on target %zu [%s] (%s) \n  %s", dependee_index,
+              dependee->GetName().c_str(), ni.IsStrong() ? "strong" : "weak", path.str().c_str());
     }
   }
   fprintf(stderr, "\n");
